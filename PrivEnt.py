@@ -1,4 +1,4 @@
-import os
+# import os
 import argparse
 
 
@@ -16,7 +16,6 @@ if __name__ == "__main__":
     # TODO: parser.add_argument("-f", "--action", help="File to import data from")
     args = parser.parse_args()
     database_file = args.database
-    db_action = args.action
-    xmlfile = args.xmlfile
-    main(database_file,db_action,xmlfile)
-
+    database_action = args.action
+    xml_file = args.xmlfile
+    main(database_file, database_action, xml_file)
