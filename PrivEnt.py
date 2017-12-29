@@ -1,11 +1,16 @@
-# import os
+import time
 import argparse
+from utilities import general
 
 
-def main(database: str, db_action: str, xmlfile: str):
+def main(database: str, db_action: str, xml_file: str):
     print("database is: " + database)
     print("action is: " + db_action)
-    print("name to find: " + xmlfile)
+    print("name to find: " + xml_file)
+    start = round(time.clock() * 10)
+    general.parse_xml(xml_file, database)
+    end = round(time.clock() * 10)
+    print("Total time: ", (end - start) / 10, "sec")
 
 
 if __name__ == "__main__":
