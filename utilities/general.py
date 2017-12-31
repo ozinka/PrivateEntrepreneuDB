@@ -1,12 +1,16 @@
 import sys
+import sqlite3
+import time
 
 
 def count_lines_in_file(file_name: str):
     print("Checking file...")
+    line_count = 0
     try:
         line_count = sum((1 for i in open(file_name, 'rb')))
     except FileNotFoundError:
         exit(2)
+    print("Lines in the file: ", line_count)
     return line_count
 
 
@@ -20,38 +24,61 @@ def progress(count, total, status=''):
     sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
     sys.stdout.flush()
 
+def check_speed(n: float, m:float):
+    if m == 0:
+        return "∞"
+    return str(round(n/m,1))
 
 def parse_xml(file_name: str, db: str):
     current_line = 0
-    data = {}
     total_lines = count_lines_in_file(file_name)
-    f = open("result.txt", 'a')
-    print("Parsing started...")
-    try:
-        for line in open(file_name):
+    data = {}
+    record_cnt = 0
+    curr_record = 0
+    start = round(time.clock(), 1)
 
-            current_line += 1
-            if current_line % 10000 == 0:
-                progress(current_line, total_lines, status="Parsing file")
+    conn = sqlite3.connect(db)  # , isolation_level=None)
 
-            #sys.stdout.write("\r%d%%" % current_line)
-            work_line = line.strip()
-            if work_line == "</ROW>":
-                # print(data)
-                f.write(str(data) + '\n')
-                continue
-            if work_line == "<ROW>":
-                data = {}
-            if work_line == "":
-                continue
-            data_string = parse_line(work_line)
-            if data_string is None:
-                continue
+    for line in open(file_name):
+        # if current_line >= 5000:
+        #     break
+        if current_line % 10000 == 0:
+            conn.commit()
+            tm = round(time.clock() - start, 1)
+            sts = "time: " + str(tm)+" s, speed: "+check_speed(record_cnt, tm) + " r/s"
+            progress(current_line, total_lines, status=sts)
+
+        current_line += 1
+
+        work_line = line.strip()
+
+        if work_line == "</ROW>":
+            b = (data.get('ПІБ', "Null"), data.get('Місце_проживання', "Null"),
+                 data.get('Основний_вид_діяльності', "Null"), data.get('Стан', "Null"))
+            try:
+                sql = "INSERT INTO main(full_name, live_place, activity_type, state) VALUES (?,?,?,?)"
+                conn.cursor().execute(sql, b)
+                record_cnt += 1
+            except sqlite3.OperationalError:
+                print("Error on Data: ", b)
+                print("Line in file: ", current_line)
+                exit(2)
+
+            continue
+
+        if work_line == "<ROW>":
+            data = {}
+            continue
+        if work_line == "":
+            continue
+        data_string = parse_line(work_line)
+        if data_string is None:
+            continue
+        else:
             data[data_string[0]] = data_string[1]
-    except FileNotFoundError:
-        print("error with reading file " + file_name)
-        exit(2)
-    f.close()
+
+    conn.close()
+    print("Current line: ", current_line)
     return
 
 
