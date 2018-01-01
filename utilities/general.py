@@ -24,17 +24,31 @@ def progress(count, total, status=''):
     sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
     sys.stdout.flush()
 
-def check_speed(n: float, m:float):
+
+def check_speed(n: float, m: float):
     if m == 0:
         return "∞"
-    return str(round(n/m,1))
+    return str(round(n / m, 1))
+
+
+def parse_name(name_str: str):
+    name_lst = name_str.split()
+    if len(name_lst) >= 3:
+        return (name_lst[0], name_lst[1], ' '.join(name_lst[2:]))
+    if len(name_lst) == 2:
+        name_lst.append("")
+        return tuple(name_lst)
+    if len(name_lst) == 1:
+        name_lst = name_lst + ["", ""]
+        # print(name_lst)
+        return tuple(name_lst)
+
 
 def parse_xml(file_name: str, db: str):
     current_line = 0
     total_lines = count_lines_in_file(file_name)
     data = {}
     record_cnt = 0
-    curr_record = 0
     start = round(time.clock(), 1)
 
     conn = sqlite3.connect(db)  # , isolation_level=None)
@@ -45,7 +59,7 @@ def parse_xml(file_name: str, db: str):
         if current_line % 10000 == 0:
             conn.commit()
             tm = round(time.clock() - start, 1)
-            sts = "time: " + str(tm)+" s, speed: "+check_speed(record_cnt, tm) + " r/s"
+            sts = "time: " + str(tm) + " s, speed: " + check_speed(record_cnt, tm) + " r/s"
             progress(current_line, total_lines, status=sts)
 
         current_line += 1
@@ -53,10 +67,11 @@ def parse_xml(file_name: str, db: str):
         work_line = line.strip()
 
         if work_line == "</ROW>":
-            b = (data.get('ПІБ', "Null"), data.get('Місце_проживання', "Null"),
-                 data.get('Основний_вид_діяльності', "Null"), data.get('Стан', "Null"))
+            b = parse_name(data.get('ПІБ', "Null")) + (data.get('Місце_проживання', "Null"),
+                                                       data.get('Основний_вид_діяльності', "Null"),
+                                                       data.get('Стан', "Null"))
             try:
-                sql = "INSERT INTO main(full_name, live_place, activity_type, state) VALUES (?,?,?,?)"
+                sql = "INSERT INTO main(surname, first_name, patronymic, live_place, activity_type, state) VALUES (?,?,?,?,?,?)"
                 conn.cursor().execute(sql, b)
                 record_cnt += 1
             except sqlite3.OperationalError:

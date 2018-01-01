@@ -1,9 +1,19 @@
 import sqlite3
 
 
-def create_db():
-    # TODO: create database
-    pass
+def create_db(database_path: str):
+    conn = sqlite3.connect(database_path)
+    ddl = "CREATE TABLE main ( " \
+          "id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE, " \
+          "surname       STRING," \
+          "first_name    STRING," \
+          "patronymic    STRING," \
+          "live_place    STRING," \
+          "activity_type STRING," \
+          "state         STRING);"
+    conn.cursor().execute(ddl)
+    conn.close()
+
 
 
 def save_to_db(dct: dict, database_path: str):
